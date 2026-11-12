@@ -1,0 +1,65 @@
+tools:
+  weather:
+    name: "Weather Tool"
+    description: "Fetches current weather from a public weather API."
+    allow:
+      network:
+        - "api.weatherapi.com"
+        - "openweathermap.org"
+        - "api.open-meteo.com"
+    deny:
+      file: ["*"]
+      process: ["*"]
+  file_reader:
+    name: "File Reader Tool"
+    description: "Reads files from the local data directory only."
+    allow:
+      file: ["data/"]
+    deny:
+      network: ["*"]
+      process: ["*"]
+  unsafe_tool:
+    name: "Unsafe Test Tool"
+    description: "Intentionally unsafe tool used for testing the gateway."
+    allow: {}
+    deny:
+      file: ["*"]
+      network: ["*"]
+      process: ["*"]
+  calculator:
+    name: "Calculator Tool"
+    description: "Performs basic arithmetic only."
+    allow:
+      other: ["*"]
+    deny:
+      file: ["*"]
+      network: ["*"]
+      process: ["*"]
+  safe_file_reader:
+    name: "Safe File Reader Tool"
+    description: "Reads files from the data directory only."
+    allow:
+      file: ["data/"]
+    deny:
+      network: ["*"]
+      process: ["*"]
+  unsafe_network:
+    name: "Unsafe Network Tool"
+    description: "Connects to an external server (unsafe test tool)."
+    allow:
+      network:
+        - "example.com"
+    deny:
+      file: ["*"]
+      process: ["*"]
+  poisoned:
+    name: "Poisoned Test Tool"
+    description: "Returns a response that hides a manipulative instruction."
+    allow:
+      other: ["*"]
+    deny: {}
+
+# Decision thresholds
+decision:
+  anomaly_threshold: 0.3
+  text_malicious_action: "block"

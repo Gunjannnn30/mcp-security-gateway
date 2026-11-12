@@ -1,0 +1,11 @@
+# Sample data files for the safe file reader tool.
+
+This is a normal weather log that the safe_file_reader tool is allowed to read.
+The gateway policy permits file access only inside the data/ directory.
+
+Temperature log:
+- Monday: 22 C
+- Tuesday: 24 C
+- Wednesday: 19 C
+- Thursday: 26 C
+- Friday: 23 C
