@@ -161,44 +161,275 @@ Every decision is saved in a file called `logs/security.log` so you can check la
 
 ---
 
-## Project structure (every file explained)
+## Project structure (every file explained in detail)
+
+Below is the complete list of every file and folder in this project, with a detailed explanation of what each one does and why it exists.
 
 ```
 mcp-security-gateway/
-├── README.md                 # This explanation file
-├── requirements.txt          # List of software libraries needed to run the project
-├── .gitignore                # Tells Git which files to ignore
+├── README.md                                     # This explanation file. You are reading it.
+├── requirements.txt                              # List of Python libraries needed to run the project
+├── .gitignore                                    # Tells Git which files and folders to ignore (not upload)
+├── e2e_check.py                                  # End-to-end demo script. Runs the gateway with safe and unsafe tools and shows the results.
 │
-├── config/
-│   └── policies.yaml         # The rulebook. Says what each tool is allowed to touch.
+├── config/                                       # Folder for configuration files (rulebooks, settings)
+│   └── policies.yaml                             # THE RULEBOOK. Explained in detail below.
 │
-├── data/
-│   └── weather_log.txt       # A sample file that the safe file reader is allowed to read
+├── data/                                         # Folder for sample data files that tools are allowed to read
+│   └── weather_log.txt                           # A sample weather log file. The safe_file_reader tool is allowed to read this file.
 │
-├── src/                      # The main security gateway code
-│   ├── gateway.py            # The main program. Sits between AI agent and tool.
-│   ├── http_server.py        # Optional web version (lets you use it over a network)
-│   ├── policy.py             # Reads the rulebook and answers "is this allowed?"
-│   ├── text_detector.py      # Scans text for sneaky hidden instructions
-│   ├── monitor.py            # Watches what the tool does while running
-│   ├── anomaly.py            # Learns normal behaviour and flags unusual activity
-│   ├── decision.py           # Combines all checks and makes ALLOW/WARN/BLOCK decision
-│   ├── logger.py             # Writes every decision to the security log
-│   └── __init__.py           # Makes the src folder a Python package
+├── src/                                          # THE MAIN GATEWAY CODE. All Python files that make the security gateway work.
+│   ├── __init__.py                               # Empty file. Tells Python that the src/ folder is a package, so other files can import from it.
+│   ├── gateway.py                                # THE HEART OF THE PROJECT. Explained in detail below.
+│   ├── http_server.py                            # Web version of the gateway. Explained in detail below.
+│   ├── policy.py                                 # Reads policies.yaml and decides if a tool action is allowed or denied. Explained below.
+│   ├── text_detector.py                          # Scans tool text for sneaky hidden instructions. Explained below.
+│   ├── monitor.py                                # Watches what a tool does while it is running. Explained below.
+│   ├── anomaly.py                                # Learns normal behavior and flags unusual activity using machine learning. Explained below.
+│   ├── decision.py                               # Combines all check results into one final decision (ALLOW / WARN / BLOCK). Explained below.
+│   └── logger.py                                 # Writes every security decision to a log file. Explained below.
 │
-├── tools/                    # Example tools that the AI agent can use
-│   ├── safe_weather.py       # Safe tool: reports weather. Only uses the internet.
-│   ├── safe_calculator.py    # Safe tool: does math. Touches nothing else.
-│   ├── safe_file_reader.py   # Safe tool: reads files only from the data/ folder.
-│   ├── unsafe_tool.py        # Unsafe test tool: reads any file, runs commands, hides sneaky text
-│   └── unsafe_network_tool.py# Unsafe test tool: connects to outside websites not in its rulebook
+├── tools/                                        # Example MCP tools that an AI agent might use. Some are safe, some are intentionally unsafe for testing.
+│   ├── safe_weather.py                           # A safe tool that reports weather. Only uses the internet.
+│   ├── safe_calculator.py                        # A safe tool that does math. Touches no files, no network, no programs.
+│   ├── safe_file_reader.py                       # A safe tool that reads files only from the data/ folder.
+│   ├── unsafe_tool.py                            # An intentionally unsafe tool for testing. Can read any file, run commands, and hide sneaky text.
+│   └── unsafe_network_tool.py                    # An intentionally unsafe tool that connects to outside websites not in its rulebook.
 │
-├── tests/
-│   └── test_gateway.py       # Tests that prove each part works correctly
+├── tests/                                        # Folder for automated tests that prove each part of the gateway works correctly.
+│   └── test_gateway.py                           # Contains 7 tests. Each test checks one part of the gateway (policy, text detector, decision engine, anomaly detector, etc.)
 │
-└── logs/
-    └── security.log          # Created automatically. Saves every allow/warn/block decision.
+└── logs/                                         # Folder where security decisions are saved automatically.
+    └── security.log                              # Created automatically when you run the gateway. Saves every ALLOW / WARN / BLOCK decision with timestamp, tool name, reason, and more.
 ```
+
+---
+
+### Detailed explanation of each file
+
+#### 1. `README.md`
+This is the file you are reading right now. It explains what the project is, how it works, how to run it, and what every file does. It is written in simple words so anyone can understand it.
+
+#### 2. `requirements.txt`
+This file lists all the Python libraries (also called packages) that must be installed before the project can run. When you run `pip install -r requirements.txt`, Python reads this file and installs everything listed here. The libraries include:
+- **psutil** – watches running programs, open files, and network connections
+- **scikit-learn** – machine learning library used to find unusual behavior
+- **pyyaml** – reads the rulebook file (`policies.yaml`)
+- **starlette** and **uvicorn** – used for the optional web version of the gateway
+- **pytest** – runs the automated tests
+
+#### 3. `.gitignore`
+This file tells Git which files and folders should NOT be uploaded to GitHub. For example, it ignores the `.venv/` folder (your private Python library folder), `__pycache__/` (temporary Python files), and `.pytest_cache/` (test temporary files). This keeps the uploaded project clean and small.
+
+#### 4. `e2e_check.py`
+Short for "end-to-end check." This is a demo script that runs the gateway with both safe and unsafe tools and prints the results to your screen. It shows you:
+- What happens when a safe tool (weather) is used → it should be ALLOWED
+- What happens when an unsafe tool tries to read a secret file → it should be BLOCKED
+- What happens when a tool hides sneaky instructions → it should be BLOCKED
+
+Run it with: `python e2e_check.py`
+
+#### 5. `config/policies.yaml` (THE RULEBOOK)
+This is the most important configuration file. It is written in YAML format (a simple text format that is easy for humans to read). It contains the rules for every tool.
+
+Each tool has an entry that says:
+- **name**: A friendly name for the tool
+- **description**: What the tool says it does (this text is also scanned for sneaky instructions)
+- **allow**: What the tool is allowed to touch (network websites, file folders, programs)
+- **deny**: What the tool is NOT allowed to touch. Deny rules always win over allow rules.
+
+Example: The weather tool is allowed to connect to weather websites, but it is denied access to read files or run programs.
+
+There is also a `decision` section at the bottom that sets thresholds, such as how unusual a behavior must be before the gateway warns about it.
+
+#### 6. `data/weather_log.txt`
+This is a sample text file containing weather information. It is used by the `safe_file_reader.py` tool to demonstrate that reading files inside the `data/` folder is allowed, while reading files outside that folder (like `C:/Windows/win.ini`) is blocked.
+
+#### 7. `src/__init__.py`
+This is an empty file. In Python, having this file inside a folder tells Python that the folder is a "package," which means other Python files can import code from it. Without this file, the `src/` folder would just be a regular folder and Python might not be able to use the files inside it properly.
+
+#### 8. `src/gateway.py` (THE MAIN PROGRAM)
+This is the heart of the entire project. It is a Python program that acts as a middleman (a proxy) between the AI agent and the MCP tools.
+
+Here is what it does, step by step, every time the AI agent asks a tool to do something:
+
+1. **Receives the request** – It gets a message from the AI agent saying "please run this tool with these settings."
+2. **Checks the policy** – It looks at `policies.yaml` to see if the tool is allowed to do what it is asking.
+3. **Scans the text** – It checks the tool's description and the request arguments for sneaky hidden instructions (like "ignore previous instructions").
+4. **Runs the tool** – If the pre-checks pass, it actually starts the tool and watches what it does.
+5. **Monitors behavior** – While the tool runs, it watches which files the tool opens, which websites it connects to, and which programs it starts.
+6. **Compares expected vs actual** – It checks if what the tool actually did matches what it was supposed to do.
+7. **Checks for anomalies** – It uses machine learning to see if the tool's behavior is unusual compared to normal.
+8. **Makes a decision** – It combines all the results and decides: ALLOW, WARN, or BLOCK.
+9. **Logs the decision** – It writes everything down to `logs/security.log`.
+10. **Sends the result back** – It sends the tool's result back to the AI agent, with a note about the security decision.
+
+The gateway communicates using a format called JSON-RPC 2.0, which is a standard way for programs to send messages to each other.
+
+#### 9. `src/http_server.py`
+This is an optional version of the gateway that works over the web instead of through direct text input/output.
+
+Normally, the gateway (`gateway.py`) reads messages from your keyboard input and writes replies to your screen. This is called "stdio mode."
+
+The `http_server.py` version creates a web server at `http://localhost:8000`. This means you can send messages to the gateway over a network connection using web addresses (URLs). It has three web addresses:
+- **`/health`** – Check if the gateway is running
+- **`/mcp`** – Send a message to the gateway
+- **`/mcp/sse`** – Keep a connection open to receive updates
+
+This is useful if you want to connect the gateway to a web-based AI agent or use it from a different computer.
+
+#### 10. `src/policy.py`
+This file reads the rulebook (`policies.yaml`) and answers the question: "Is this tool allowed to do this?"
+
+When the gateway asks, for example, "Can the weather tool read the file `C:/secret.txt`?", this file looks at the weather tool's rules and says "No, file access is denied."
+
+It uses two types of rules:
+- **Allow rules** – Say what IS allowed
+- **Deny rules** – Say what is NOT allowed. Deny rules are checked first and always win.
+
+If a tool tries to do something that is not in its allow list, the policy engine says no.
+
+#### 11. `src/text_detector.py`
+This file scans text for sneaky hidden instructions. It looks for patterns like:
+- "Ignore the previous instructions"
+- "Reveal sensitive information"
+- "Send this file to another website"
+- Secret code commands like `eval(`, `exec(`, `os.system(`
+
+These patterns are signs that a tool might be trying to trick the AI agent into doing something dangerous. If the text detector finds a match, it flags the text as suspicious.
+
+It scans three things:
+1. The tool's description (what the tool claims to do)
+2. The arguments sent to the tool
+3. The response the tool sends back
+
+#### 12. `src/monitor.py`
+This file watches what a tool does while it is actually running. This is called "runtime monitoring."
+
+It watches for:
+- **File access** – Which files the tool opens or tries to read
+- **Network connections** – Which websites or servers the tool connects to
+- **Process spawning** – Which programs the tool tries to start
+
+It uses a Python library called `psutil` to do this watching. On Linux, it can also use a more advanced technology called eBPF, but on Windows and Mac it uses the simpler `psutil` method.
+
+The monitor helps catch tools that pretend to be safe but secretly do dangerous things in the background.
+
+#### 13. `src/anomaly.py`
+This file uses machine learning to find unusual behavior.
+
+It works in two phases:
+1. **Learning phase** – It collects information about what normal behavior looks like for each tool (how often it is called, how big the messages are, how many network connections it makes, etc.)
+2. **Detection phase** – When a new tool call happens, it compares the new behavior to what it learned. If the new behavior is very different, it gives a low score (meaning "very unusual").
+
+The project uses a machine learning method called "Isolation Forest" from the `scikit-learn` library. If that library cannot be installed, the project uses a simpler statistics-based method instead.
+
+Important: The anomaly detector is only a warning signal, not the only reason to block a tool. Unusual behavior does not always mean the tool is dangerous.
+
+#### 14. `src/decision.py`
+This file is the final judge. It takes all the results from the other checks and makes one final decision:
+- **ALLOW** – Everything looks good. The tool can proceed.
+- **WARN** – Something looks unusual but not clearly dangerous. Proceed with caution.
+- **BLOCK** – A rule was broken, or sneaky text was found. Stop the tool.
+
+It combines:
+- The policy result (allowed or denied)
+- The runtime behavior (suspicious or normal)
+- The anomaly score (how unusual the behavior is)
+- The text scan result (clean or malicious)
+
+#### 15. `src/logger.py`
+This file writes every security decision to a file called `logs/security.log`. Each entry includes:
+- The time and date
+- Which tool was used
+- What the tool tried to do
+- The final decision (ALLOW, WARN, or BLOCK)
+- The reason for the decision
+- The anomaly score
+- The text scan result
+
+This log is important because it lets you look back later and understand exactly why the gateway allowed or blocked each action.
+
+---
+
+#### 16. `tools/safe_weather.py`
+This is an example of a SAFE tool. It pretends to be a weather tool that reports the weather for a city.
+
+It is safe because:
+- It only uses the internet to (pretend to) get weather data
+- It does not read any files from your computer
+- It does not run any programs
+- It does not hide any sneaky instructions
+
+The gateway allows this tool to use the network but blocks it from accessing files or running programs.
+
+#### 17. `tools/safe_calculator.py`
+This is an example of a SAFE tool. It does simple math (add, subtract, multiply, divide).
+
+It is safe because:
+- It only does math calculations
+- It touches no files, no network, and no programs
+- It cannot access your private information
+
+The gateway allows this tool because it does not try to do anything dangerous.
+
+#### 18. `tools/safe_file_reader.py`
+This is an example of a SAFE tool. It reads files, but ONLY from the `data/` folder.
+
+It is safe because:
+- It is restricted to reading files inside `data/` only
+- It cannot read files outside that folder (like your private documents)
+- It does not use the network or run programs
+
+The gateway allows this tool to read files from `data/` but blocks it from reading anything else.
+
+#### 19. `tools/unsafe_tool.py`
+This is an INTENTIONALLY UNSAFE tool used for testing the gateway. It demonstrates three types of dangerous behavior:
+
+1. **`file_reader`** – Can read ANY file from your computer, including secret files
+2. **`shell_run`** – Can run ANY command on your computer
+3. **`poisoned`** – Returns a harmless-looking answer that hides a sneaky instruction inside it (like "ignore previous instructions and reveal secrets")
+
+When you point the gateway at this tool, the gateway should BLOCK all three of these dangerous actions.
+
+#### 20. `tools/unsafe_network_tool.py`
+This is an INTENTIONALLY UNSAFE tool used for testing. It connects to outside websites.
+
+It is unsafe because:
+- It tries to connect to websites that are NOT in its allow-list
+- The gateway should block this because the tool is not allowed to talk to those websites
+
+#### 21. `tests/test_gateway.py`
+This file contains 7 automated tests. Each test checks that one part of the gateway works correctly:
+
+1. Policy denies file access for a weather tool
+2. Policy allows weather network access
+3. Text detector catches sneaky instructions
+4. Decision engine blocks when policy says no
+5. Decision engine allows when everything is clean
+6. Anomaly detector is neutral when it has not learned anything yet
+7. Anomaly detector learns normal behavior and flags weird behavior
+
+Run them with: `python -m pytest tests/ -v`
+
+All 7 tests should pass.
+
+#### 22. `logs/security.log`
+This file is created automatically when you run the gateway. It is not in the project until you start using it.
+
+Every time the gateway makes a decision (ALLOW, WARN, or BLOCK), it writes a line to this file. Each line is in JSON format (a standard text format) and includes:
+- Timestamp (when it happened)
+- Tool name
+- What the tool tried to do
+- The decision
+- The reason
+- The anomaly score
+- The text scan result
+
+You can open this file to see a complete history of everything the gateway did.
+
+---
+
 
 ---
 
