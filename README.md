@@ -1,6 +1,23 @@
 # MCP Security Gateway: A Self-Protecting Layer for AI Agent Tool Calls
 
-A simple, beginner-friendly security system that sits between an AI agent and the tools it uses.
+## About this project
+
+This is a beginner-friendly security system that sits between an **AI agent** (a smart computer assistant) and the **tools** it uses (like checking the weather, reading files, or searching the internet).
+
+Many AI agents today can do more than just chat. They can use outside tools to get things done. There is a standard way for them to connect to these tools, called **MCP** (Model Context Protocol). Think of MCP like a universal power plug: one plug works for many tools instead of needing a different plug for each one.
+
+But there is a problem. When an AI agent connects to a tool, it trusts that tool completely. A tool might:
+- Ask to do more than it needs (for example, a weather tool that also reads your private files).
+- Pretend to do one thing but secretly do something else behind your back.
+- Hide a secret instruction inside its text that tricks the AI into sharing your secrets.
+
+This project builds a **security guard** called the **MCP Security Gateway**. It sits between the AI assistant and every tool. Instead of trusting a tool blindly, the gateway checks the tool carefully:
+
+> "What is this tool **allowed** to do → what does it **claim** to do → what does it **actually** do → is its behaviour **unusual** → do its messages contain **sneaky instructions**?"
+
+If anything looks wrong, the gateway **blocks** or **warns** about it and writes down why in a log file.
+
+This project was built as a B.Tech Computer Science (AI & Data Science) project. It is meant for learning, testing, and further research. It is not a finished commercial product.
 
 ---
 
